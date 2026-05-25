@@ -1,0 +1,418 @@
+// Prisma schema for SentientWallet
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Settings
+model User {
+  id                String          @id @default(uuid())
+  walletAddress     String          @unique
+  email             String?         @unique
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lastLoginAt       DateTime?
+  isActive          Boolean         @default(true)
+
+  // Relations
+  settings          UserSettings?
+  actions           AgentAction[]
+  transactions      Transaction[]
+  portfolios        Portfolio[]
+  notifications     Notification[]
+  sessions          Session[]
+
+  @@index([walletAddress])
+  @@index([email])
+  @@map("users")
+}
+
+model UserSettings {
+  id                      String    @id @default(uuid())
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  autonomousMode          Boolean   @default(false)
+  dailySpendLimit         Float     @default(1000)
+  maxGasPrice             Int       @default(60) // in Gwei
+  riskTolerance           String    @default("moderate") // conservative, moderate, aggressive
+  targetApy               Float     @default(5.0)
+  maxDrawdown             Float     @default(2.0)
+
+  // Notification preferences
+  notifyEmail             Boolean   @default(true)
+  notifyPush              Boolean   @default(true)
+  notifyWebsocket         Boolean   @default(true)
+  notifyThreshold         Float     @default(100)
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relations
+  whitelist               ProtocolWhitelist[]
+  blacklist               ProtocolBlacklist[]
+
+  @@index([userId])
+  @@map("user_settings")
+}
+
+model ProtocolWhitelist {
+  id                String        @id @default(uuid())
+  settingsId        String
+  settings          UserSettings  @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  protocol          String
+  name              String
+  enabled           Boolean       @default(true)
+  contractAddresses String[]
+  chains            Int[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([settingsId, protocol])
+  @@index([settingsId])
+  @@map("protocol_whitelist")
+}
+
+model ProtocolBlacklist {
+  id                String        @id @default(uuid())
+  settingsId        String
+  settings          UserSettings  @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  protocol          String
+  contractAddress   String
+  chainId           Int
+  reason            String?
+
+  createdAt         DateTime      @default(now())
+
+  @@unique([settingsId, contractAddress, chainId])
+  @@index([settingsId])
+  @@map("protocol_blacklist")
+}
+
+// Agent Actions
+model AgentAction {
+  id                  String    @id @default(uuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  thoughtProcess      String
+  actionType          String    // SWAP, STAKE, UNSTAKE, WAIT, HARVEST, REBALANCE
+
+  // Action data (stored as JSON)
+  tokenIn             String?
+  tokenOut            String?
+  amount              String?
+  protocol            String?
+  poolId              String?
+  fromProtocol        String?
+  toProtocol          String?
+  additionalData      Json?
+
+  confidenceScore     Float
+  requiresApproval    Boolean
+  status              String    @default("pending") // pending, approved, rejected, executing, completed, failed
+
+  simulationResult    Json?
+  transactionHash     String?
+  errorMessage        String?
+
+  priority            String    @default("normal") // low, normal, high, critical
+  expiresAt           DateTime?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  completedAt         DateTime?
+
+  // Relations
+  logs                AgentLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("agent_actions")
+}
+
+model AgentLog {
+  id              String        @id @default(uuid())
+  actionId        String?
+  action          AgentAction?  @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  level           String        // info, warning, error, success
+  message         String
+  data            Json?
+
+  timestamp       DateTime      @default(now())
+
+  @@index([actionId])
+  @@index([timestamp])
+  @@map("agent_logs")
+}
+
+// Portfolio Management
+model Portfolio {
+  id                String          @id @default(uuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  totalValueUsd     Float
+  lastUpdated       DateTime        @default(now())
+
+  // Performance metrics
+  dailyPnl          Float           @default(0)
+  weeklyPnl         Float           @default(0)
+  monthlyPnl        Float           @default(0)
+  totalPnl          Float           @default(0)
+  currentApy        Float           @default(0)
+  currentDrawdown   Float           @default(0)
+  sharpeRatio       Float?
+  winRate           Float?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  assets            Asset[]
+  positions         Position[]
+  history           PortfolioHistory[]
+
+  @@index([userId])
+  @@index([lastUpdated])
+  @@map("portfolios")
+}
+
+model Asset {
+  id              String      @id @default(uuid())
+  portfolioId     String
+  portfolio       Portfolio   @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  tokenAddress    String
+  symbol          String
+  name            String
+  balance         String
+  decimals        Int
+  priceUsd        Float
+  valueUsd        Float
+  chainId         Int
+
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([portfolioId, tokenAddress, chainId])
+  @@index([portfolioId])
+  @@map("assets")
+}
+
+model Position {
+  id                String      @id @default(uuid())
+  portfolioId       String
+  portfolio         Portfolio   @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  protocol          String
+  type              String      // lending, liquidity, staking, farming
+  tokenSymbol       String
+  amount            String
+  valueUsd          Float
+  apy               Float
+  chainId           Int
+
+  entryPrice        Float
+  currentPrice      Float
+  pnlUsd            Float
+  pnlPercentage     Float
+
+  claimableRewards  Json?       // Array of {token, amount, valueUsd}
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([portfolioId])
+  @@index([protocol])
+  @@map("positions")
+}
+
+model PortfolioHistory {
+  id              String      @id @default(uuid())
+  portfolioId     String
+  portfolio       Portfolio   @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  totalValueUsd   Float
+  apy             Float
+  pnl             Float
+
+  timestamp       DateTime    @default(now())
+
+  @@index([portfolioId])
+  @@index([timestamp])
+  @@map("portfolio_history")
+}
+
+// Transactions
+model Transaction {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  hash            String      @unique
+  type            String      // swap, stake, unstake, harvest, approve
+  status          String      @default("pending") // pending, confirmed, failed
+
+  fromToken       String?
+  toToken         String?
+  amountIn        String?
+  amountOut       String?
+  protocol        String
+
+  gasUsed         String?
+  gasPrice        String?
+  gasCostEth      String?
+  gasCostUsd      Float?
+
+  blockNumber     Int?
+  chainId         Int
+  initiatedBy     String      @default("agent") // user, agent
+
+  createdAt       DateTime    @default(now())
+  confirmedAt     DateTime?
+
+  @@index([userId])
+  @@index([hash])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// Strategies
+model Strategy {
+  id              String      @id @default(uuid())
+  name            String
+  description     String
+  type            String      // yield_farming, arbitrage, rebalancing, risk_management
+  enabled         Boolean     @default(true)
+  status          String      @default("active") // active, paused, stopped
+
+  parameters      Json        // Strategy-specific parameters
+
+  // Performance
+  totalProfitUsd  Float       @default(0)
+  totalProfitPct  Float       @default(0)
+  tradesExecuted  Int         @default(0)
+  successRate     Float       @default(0)
+  avgApy          Float       @default(0)
+  maxDrawdownHit  Float       @default(0)
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  lastExecutionAt DateTime?
+
+  @@index([type])
+  @@index([enabled])
+  @@map("strategies")
+}
+
+// Market Data Cache
+model YieldOpportunity {
+  id              String      @id @default(uuid())
+  protocol        String
+  poolId          String
+  poolName        String
+  apy             Float
+  tvlUsd          Float
+  tokens          String[]
+  chainId         Int
+  riskScore       Float
+  category        String      // stablecoin, blue-chip, exotic
+
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([protocol, poolId, chainId])
+  @@index([apy])
+  @@index([chainId])
+  @@map("yield_opportunities")
+}
+
+model MarketSentiment {
+  id                  String      @id @default(uuid())
+  overallScore        Float       // -100 to 100
+  fearGreedIndex      Float
+  trendingTopics      String[]
+  gasPriceGwei        Float
+  ethPriceUsd         Float
+
+  protocolAlerts      Json[]      // Array of alerts
+
+  timestamp           DateTime    @default(now())
+
+  @@index([timestamp])
+  @@map("market_sentiment")
+}
+
+// Notifications
+model Notification {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type            String      // info, success, warning, error, approval
+  title           String
+  message         String
+  read            Boolean     @default(false)
+
+  actionUrl       String?
+  actionLabel     String?
+
+  createdAt       DateTime    @default(now())
+  readAt          DateTime?
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// Sessions (for WebSocket and API authentication)
+model Session {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token           String      @unique
+  ipAddress       String?
+  userAgent       String?
+
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+  lastActiveAt    DateTime    @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// API Keys (for external integrations)
+model ApiKey {
+  id              String      @id @default(uuid())
+  name            String
+  key             String      @unique
+  hashedKey       String
+
+  permissions     String[]    // read, write, execute, admin
+  rateLimit       Int         @default(100)
+
+  isActive        Boolean     @default(true)
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([key])
+  @@map("api_keys")
+}

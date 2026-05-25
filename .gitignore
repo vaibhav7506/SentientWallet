@@ -1,0 +1,302 @@
+# SentientWallet - Git Ignore File
+
+# ==================== Environment Variables ====================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+**/.env
+**/.env.local
+
+# ==================== Node.js ====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Package manager locks (keep one, ignore others)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ==================== Next.js ====================
+.next/
+out/
+build/
+dist/
+.vercel
+.turbo
+
+# Next.js cache
+.next/cache
+
+# ==================== TypeScript ====================
+*.tsbuildinfo
+next-env.d.ts
+
+# ==================== Testing ====================
+coverage/
+.nyc_output/
+*.lcov
+
+# Jest
+jest-results/
+test-results/
+
+# ==================== Python ====================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Python distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.pytest_cache/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# ==================== Databases ====================
+# PostgreSQL
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma
+prisma/migrations/**/migration.sql
+!prisma/migrations/.keep
+
+# Database backups
+*.dump
+*.backup
+
+# ==================== Logs ====================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Winston logs
+combined.log
+error.log
+exceptions.log
+rejections.log
+
+# PM2 logs
+.pm2/
+
+# ==================== OS Files ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ==================== IDEs & Editors ====================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ==================== Docker ====================
+docker-compose.override.yml
+.docker/
+
+# ==================== Temporary Files ====================
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# ==================== Build & Deploy ====================
+dist/
+build/
+*.tgz
+*.zip
+*.tar.gz
+
+# Serverless
+.serverless/
+
+# Vercel
+.vercel/
+
+# ==================== Security & Secrets ====================
+# Private keys
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# AWS
+.aws/
+aws-exports.js
+
+# Secrets
+secrets/
+.secrets/
+*.secret
+.env.secret
+
+# API Keys (extra safety)
+*_API_KEY*
+*_SECRET*
+*_TOKEN*
+
+# ==================== AI & ML ====================
+# Model files
+*.h5
+*.pkl
+*.joblib
+*.model
+*.weights
+
+# Datasets
+data/
+datasets/
+*.csv
+*.json.gz
+
+# ==================== Miscellaneous ====================
+# Sentry
+.sentryclirc
+
+# Local Netlify folder
+.netlify/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes
+*.kubeconfig
+
+# Generated files
+generated/
+*.generated.*
+
+# Documentation builds
+docs/_build/
+site/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# ==================== Project Specific ====================
+# User uploaded content
+uploads/
+public/uploads/
+
+# Static assets (if generated)
+public/static/generated/
+
+# Analytics & monitoring
+.lighthouseci/
+
+# Storybook
+storybook-static/
+
+# ==================== Preview & Temporary ====================
+.preview/
+*.preview.*
+preview-*/
+
+# ==================== Keep These ====================
+!.gitkeep
+!.keep
+!README.md
+!LICENSE
+!.github/
+
+# ==================== END ====================
